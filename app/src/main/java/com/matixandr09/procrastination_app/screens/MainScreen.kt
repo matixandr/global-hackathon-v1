@@ -1,6 +1,8 @@
 package com.matixandr09.procrastination_app.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,9 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -34,12 +36,20 @@ fun MainScreen(navController: NavController) {
         ) {
             Image(
                 painter = painterResource(id = R.drawable.account),
-                contentDescription = "Account"
+                contentDescription = "Account",
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { navController.navigate("accounts") }
             )
             Text(text = "Dynamic Text") // This will be dynamic in the future
             Image(
                 painter = painterResource(id = R.drawable.streak),
-                contentDescription = "Streak"
+                contentDescription = "Streak",
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { navController.navigate("streak") }
             )
         }
 
@@ -48,12 +58,7 @@ fun MainScreen(navController: NavController) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(onClick = { navController.navigate("accounts") }) {
-                Text("Accounts")
-            }
-            Button(onClick = { navController.navigate("streak") }) {
-                Text("Streak")
-            }
+            // Main content goes here
         }
     }
 }
