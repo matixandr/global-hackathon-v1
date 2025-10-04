@@ -9,7 +9,10 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +27,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -31,6 +36,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,13 +51,20 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.matixandr09.procrastination_app.R
+import java.util.UUID
 
+data class Task(val id: String = UUID.randomUUID().toString(), var text: String, var isDone: Boolean = false)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(navController: NavController) {
     var text by remember { mutableStateOf("") }
+    val tasks = remember { mutableStateListOf<Task>() }
     val context = LocalContext.current
     var isListening by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Naciśnij mikrofon, aby mówić.") }
+    var editingTaskId by remember { mutableStateOf<String?>(null) }
+    var editingTaskText by remember { mutableStateOf("") }
 
     val speechRecognizer = remember { SpeechRecognizer.createSpeechRecognizer(context) }
 
@@ -177,7 +190,111 @@ fun MainScreen(navController: NavController) {
             )
         }
 
-        Spacer(Modifier.weight(1f))
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            items(tasks, key = { it.id }) { task ->
+                Box(
+                    modifier = Modifier
+                        .animateItemPlacement(
+                            animationSpec = tween(durationMillis = 500)
+                        )
+                        .fillMaxWidth(330f / 440f)
+                        .padding(vertical = 4.dp)
+                        .background(Color(0xFFFFC8DD), shape = RoundedCornerShape(10.dp))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Image(
+                            painter = painterResource(id = if (task.isDone) R.drawable.todo_checkmark_done else R.drawable.todo_checkmark_not_done),
+                            contentDescription = "Checkmark",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    val taskIndex = tasks.indexOf(task)
+                                    if (taskIndex != -1) {
+                                        tasks[taskIndex] = tasks[taskIndex].copy(isDone = !tasks[taskIndex].isDone)
+                                    }
+                                }
+                        )
+                        if (editingTaskId == task.id) {
+                            TextField(
+                                value = editingTaskText,
+                                onValueChange = { editingTaskText = it },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 16.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedTextColor = Color.Black,
+                                    unfocusedTextColor = Color.Black,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    disabledContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    disabledIndicatorColor = Color.Transparent
+                                ),
+                            )
+                        } else {
+                            Text(
+                                text = task.text,
+                                color = Color.Black,
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 16.dp)
+                            )
+                        }
+                        if (editingTaskId == task.id) {
+                            Image(
+                                painter = painterResource(id = R.drawable.olowek),
+                                contentDescription = "Save",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clickable {
+                                        val taskIndex = tasks.indexOfFirst { it.id == editingTaskId }
+                                        if (taskIndex != -1) {
+                                            tasks[taskIndex] = tasks[taskIndex].copy(text = editingTaskText)
+                                        }
+                                        editingTaskId = null
+                                    }
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.olowek),
+                                contentDescription = "Edit",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clickable {
+                                        editingTaskId = task.id
+                                        editingTaskText = task.text
+                                    }
+                            )
+                        }
+                        Spacer(modifier = Modifier.size(16.dp))
+                        Image(
+                            painter = painterResource(id = R.drawable.delete),
+                            contentDescription = "Delete",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable {
+                                    tasks.remove(task)
+                                }
+                        )
+                    }
+                }
+            }
+        }
 
         // Bottom centered box
         Box(
@@ -204,7 +321,12 @@ fun MainScreen(navController: NavController) {
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { /* TODO: Handle add task action */ }
+                        ) {
+                            if (text.isNotBlank()) {
+                                tasks.add(0, Task(text = text))
+                                text = ""
+                            }
+                        }
                         .padding(start = 16.dp)
                         .size(32.dp)
                 )
@@ -262,7 +384,9 @@ fun MainScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = status,
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(horizontal = 24.dp),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(horizontal = 24.dp),
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(40.dp))
