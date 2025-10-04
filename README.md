@@ -76,7 +76,7 @@ node verify-submission.js
 ```
 
 Check:
-- [ ] GitHub repo is public
+- [x] GitHub repo is public
 - [ ] 60s video is public and accessible
 - [ ] Live demo works in incognito window
 - [ ] Made 5+ commits during the 24 hours
