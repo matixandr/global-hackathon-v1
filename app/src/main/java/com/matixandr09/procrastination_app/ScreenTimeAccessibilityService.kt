@@ -1,25 +1,27 @@
 package com.matixandr09.procrastination_app
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.WindowManager
-import android.widget.FrameLayout
+import com.matixandr09.procrastination_app.screens.BlockedActivity
 
 class ScreenTimeAccessibilityService : AccessibilityService() {
 
     private val blockedApps = listOf("com.google.android.youtube")
-    private var overlayView: FrameLayout? = null
+    private var previousApp: String? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event?.packageName?.let { packageName ->
             val currentApp = packageName.toString()
+            if (currentApp == previousApp) {
+                return // Do nothing if the app hasn't changed
+            }
+            previousApp = currentApp // Update the previous app
+
             if (currentApp in blockedApps) {
                 Log.d("ScreenTimeService", "Blocking app: $currentApp")
-                showOverlay()
-            } else {
-                removeOverlay()
+                showBlockScreen()
             }
         }
     }
@@ -28,31 +30,9 @@ class ScreenTimeAccessibilityService : AccessibilityService() {
         // Required override
     }
 
-    private fun showOverlay() {
-        if (overlayView != null) return // Already showing
-
-        val inflater = LayoutInflater.from(this)
-        overlayView = inflater.inflate(R.layout.overlay_blocked, null) as FrameLayout
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            android.graphics.PixelFormat.TRANSLUCENT
-        )
-
-        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        wm.addView(overlayView, params)
-    }
-
-    private fun removeOverlay() {
-        overlayView?.let {
-            val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-            wm.removeView(it)
-            overlayView = null
-        }
+    private fun showBlockScreen() {
+        val intent = Intent(this, BlockedActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
     }
 }
