@@ -6,10 +6,15 @@ import android.util.Log
 
 class ScreenTimeAccessibilityService : AccessibilityService() {
 
+    val blockedApps = listOf("com.google.android.youtube")
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event?.packageName?.let { packageName ->
             val currentApp = packageName.toString()
-            Log.d("ScreenTimeService", "Current app: $currentApp")
+
+            if (currentApp in blockedApps) {
+                Log.d("ScreenTimeService", "Blocking app: $currentApp")
+            }
 
             // TODO: You can store this info in database for real-time tracking
         }
