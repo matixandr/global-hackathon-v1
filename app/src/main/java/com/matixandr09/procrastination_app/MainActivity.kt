@@ -1,5 +1,7 @@
 package com.matixandr09.procrastination_app
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,6 +29,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+// Top-level extension function
+fun Context.openAccessibilitySettings() {
+    val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+    startActivity(intent)
 }
 
 @Composable
