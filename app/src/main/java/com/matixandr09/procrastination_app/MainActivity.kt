@@ -1,7 +1,5 @@
 package com.matixandr09.procrastination_app
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.matixandr09.procrastination_app.data.AppViewModel
 import com.matixandr09.procrastination_app.screens.AccountsScreen
+import com.matixandr09.procrastination_app.screens.AppSelectionScreen
 import com.matixandr09.procrastination_app.screens.MainScreen
 import com.matixandr09.procrastination_app.screens.StreakScreen
 import com.matixandr09.procrastination_app.ui.theme.ProcrastinationappTheme
@@ -31,12 +30,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Top-level extension function
-fun Context.openAccessibilitySettings() {
-    val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
-    startActivity(intent)
-}
-
 @Composable
 fun AppNavigation(appViewModel: AppViewModel) {
     val navController = rememberNavController()
@@ -44,5 +37,6 @@ fun AppNavigation(appViewModel: AppViewModel) {
         composable("main") { MainScreen(navController, appViewModel) }
         composable("accounts") { AccountsScreen(navController) }
         composable("streak") { StreakScreen(navController, appViewModel) }
+        composable("app_selection") { AppSelectionScreen(navController) }
     }
 }

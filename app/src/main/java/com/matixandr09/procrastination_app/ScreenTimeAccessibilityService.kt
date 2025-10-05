@@ -11,10 +11,14 @@ import com.matixandr09.procrastination_app.screens.BlockedActivity
 
 class ScreenTimeAccessibilityService : AccessibilityService() {
 
-    private val blockedApps = listOf("com.google.android.youtube")
-    private val timeLimitMs = 30 * 60 * 1000L
-
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        val sharedPrefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        val timeLimitMinutes = sharedPrefs.getInt("time_limit_minutes", 30)
+        val timeLimitMs = timeLimitMinutes * 60 * 1000
+
+        val blockedAppsPrefs = getSharedPreferences("blocked_apps", Context.MODE_PRIVATE)
+        val blockedApps = blockedAppsPrefs.getStringSet("blocked_apps", emptySet()) ?: emptySet()
+
         event?.packageName?.let { packageName ->
             val currentApp = packageName.toString()
 

@@ -1,6 +1,7 @@
 package com.matixandr09.procrastination_app.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -9,10 +10,8 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,13 +29,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,23 +50,74 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.matixandr09.procrastination_app.R
 import com.matixandr09.procrastination_app.data.AppViewModel
-import java.time.LocalDate
 import java.util.UUID
 
 data class Task(val id: String = UUID.randomUUID().toString(), var text: String, var isDone: Boolean = false)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(navController: NavController) {
-    // Get the current Context
+fun MainScreen(navController: NavController, appViewModel: AppViewModel) {
     val context = LocalContext.current
+    var text by remember { mutableStateOf("") }
+    var isListening by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("...") }
+
+    val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+
+    val recognitionListener = object : RecognitionListener {
+        override fun onReadyForSpeech(params: Bundle?) {
+            isListening = true
+            status = "Listening..."
+        }
+
+        override fun onBeginningOfSpeech() {}
+        override fun onRmsChanged(rmsdB: Float) {}
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() {
+            isListening = false
+            status = "..."
+        }
+
+        override fun onError(error: Int) {
+            isListening = false
+            status = "Error: $error"
+        }
+
+        override fun onResults(results: Bundle?) {
+            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+            if (matches != null && matches.isNotEmpty()) {
+                text = matches[0]
+            }
+        }
+
+        override fun onPartialResults(partialResults: Bundle?) {}
+        override fun onEvent(eventType: Int, params: Bundle?) {}
+    }
+
+    speechRecognizer.setRecognitionListener(recognitionListener)
+
+    val startVoiceRecognition = {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+        speechRecognizer.startListening(intent)
+    }
+
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            startVoiceRecognition()
+        } else {
+            status = "Permission denied"
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding(),
     ) {
-        // Top navigation bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,7 +133,7 @@ fun MainScreen(navController: NavController) {
                     indication = null
                 ) { navController.navigate("accounts") }
             )
-            Text(text = "00:00") // This will be dynamic in the future
+            Text(text = "00:00")
             Image(
                 painter = painterResource(id = R.drawable.streak),
                 contentDescription = "Streak",
@@ -95,20 +144,17 @@ fun MainScreen(navController: NavController) {
             )
         }
 
-        Button(onClick = { context.openAccessibilitySettings() }) {
-            Text("Enable Accessibility")
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(appViewModel.tasks) { task ->
+                Text(text = task.text, modifier = Modifier.padding(16.dp))
+            }
         }
 
-        Button(onClick = { navController.navigate("streak") }) {
-            Text("Streak")
-        }
-
-        // Bottom centered box
         Box(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .fillMaxWidth(380f / 440f) // ~86% of screen width
-                .height(60.dp) // Height
+                .fillMaxWidth(380f / 440f)
+                .height(60.dp)
                 .border(
                     width = 1.dp,
                     color = Color(0xFF4C4C4C),
@@ -130,7 +176,7 @@ fun MainScreen(navController: NavController) {
                             indication = null
                         ) {
                             if (text.isNotBlank()) {
-                                tasks.add(0, Task(text = text))
+                                appViewModel.tasks.add(0, Task(text = text))
                                 text = ""
                             }
                         }
@@ -198,4 +244,9 @@ fun MainScreen(navController: NavController) {
         )
         Spacer(modifier = Modifier.height(40.dp))
     }
+}
+
+fun Context.openAccessibilitySettings() {
+    val intent = Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+    startActivity(intent)
 }
