@@ -30,17 +30,47 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 
 val socialMediaApps = setOf(
-    "com.instagram.android",
-    "com.facebook.katana",
-    "com.twitter.android",
-    "com.snapchat.android",
-    "com.tiktok.musical.ly",
-    "com.pinterest",
-    "com.linkedin.android",
-    "com.reddit.frontpage",
-    "com.whatsapp",
-    "com.facebook.orca",
-    "com.google.android.youtube"
+    "com.google.android.youtube",          // YouTube
+    "com.instagram.android",               // Instagram
+    "com.snapchat.android",                // Snapchat
+    "com.tiktok.android",                  // TikTok
+    "com.facebook.orca",                   // Facebook Messenger
+    "com.whatsapp",                        // WhatsApp
+    "com.facebook.katana",                 // Facebook
+    "com.twitter.android",                 // Twitter / X
+    "com.reddit.frontpage",                // Reddit
+    "com.pinterest",                       // Pinterest
+    "com.tumblr",                          // Tumblr
+    "com.vk.android",                      // VK (Russia)
+    "com.kakao.talk",                       // KakaoTalk (South Korea)
+    "jp.naver.line.android",               // LINE (Japan / Asia)
+    "com.zhiliaoapp.musically",            // TikTok older package
+    "com.clubhouse.app",                   // Clubhouse
+    "com.discord",                         // Discord
+
+    // Messaging & Social Networks
+    "com.skype.raider",                    // Skype
+    "com.telegram.messenger",              // Telegram
+    "com.signal.android",                  // Signal
+    "com.wechat",                          // WeChat
+    "com.tencent.mm",                      // Tencent WeChat
+    "com.kik",                             // Kik
+    "com.hike.chat",                       // Hike Messenger
+    "com.linecorp.linelite",               // LINE Lite
+    "com.linkedin.android",                // LinkedIn
+    "com.nextdoor",                        // Nextdoor
+
+    // Regional or niche social media
+    "com.meesho.app",                      // Meesho
+    "in.startv.hotstar",                   // Hotstar (video social)
+    "com.badoo.mobile",                     // Badoo
+    "com.tinder",                          // Tinder (dating/social)
+    "com.okcupid.okcupid",                  // OkCupid
+    "com.happn.app",                        // Happn
+    "com.douyin",                           // Douyin (China TikTok)
+    "com.kwai.video",                       // Kwai (Asia)
+    "com.likee.video",                      // Likee
+    "com.bytedance.lark",                    // Lark (social collaboration)
 )
 
 @Composable
