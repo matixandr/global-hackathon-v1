@@ -7,8 +7,8 @@ import android.content.Intent
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import com.matixandr09.procrastination_app.data.socialMediaApps
 import com.matixandr09.procrastination_app.screens.BlockedActivity
-import com.matixandr09.procrastination_app.screens.socialMediaApps
 
 class ScreenTimeAccessibilityService : AccessibilityService() {
 
