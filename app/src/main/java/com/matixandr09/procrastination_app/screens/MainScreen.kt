@@ -51,13 +51,15 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.matixandr09.procrastination_app.R
+import com.matixandr09.procrastination_app.data.AppViewModel
+import java.time.LocalDate
 import java.util.UUID
 
 data class Task(val id: String = UUID.randomUUID().toString(), var text: String, var isDone: Boolean = false)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(navController: NavController, appViewModel: AppViewModel) {
     var text by remember { mutableStateOf("") }
     val tasks = remember { mutableStateListOf<Task>() }
     val context = LocalContext.current
@@ -179,7 +181,7 @@ fun MainScreen(navController: NavController) {
                     indication = null
                 ) { navController.navigate("accounts") }
             )
-            Text(text = "Dynamic Text") // This will be dynamic in the future
+            Text(text = "00:00") // This will be dynamic in the future
             Image(
                 painter = painterResource(id = R.drawable.streak),
                 contentDescription = "Streak",
@@ -223,7 +225,13 @@ fun MainScreen(navController: NavController) {
                                 ) {
                                     val taskIndex = tasks.indexOf(task)
                                     if (taskIndex != -1) {
-                                        tasks[taskIndex] = tasks[taskIndex].copy(isDone = !tasks[taskIndex].isDone)
+                                        val updatedTask = tasks[taskIndex].copy(isDone = !tasks[taskIndex].isDone)
+                                        tasks[taskIndex] = updatedTask
+                                        if (updatedTask.isDone) {
+                                            appViewModel.addCompletedDate(LocalDate.now())
+                                        } else {
+                                            appViewModel.removeCompletedDate(LocalDate.now())
+                                        }
                                     }
                                 }
                         )
