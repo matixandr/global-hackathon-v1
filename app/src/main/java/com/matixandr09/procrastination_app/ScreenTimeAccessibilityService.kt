@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.matixandr09.procrastination_app.screens.BlockedActivity
+import com.matixandr09.procrastination_app.screens.socialMediaApps
 
 class ScreenTimeAccessibilityService : AccessibilityService() {
 
@@ -17,7 +18,7 @@ class ScreenTimeAccessibilityService : AccessibilityService() {
         val timeLimitMs = timeLimitMinutes * 60 * 1000
 
         val blockedAppsPrefs = getSharedPreferences("blocked_apps", Context.MODE_PRIVATE)
-        val blockedApps = blockedAppsPrefs.getStringSet("blocked_apps", emptySet()) ?: emptySet()
+        val blockedApps = blockedAppsPrefs.getStringSet("blocked_apps", socialMediaApps) ?: socialMediaApps
 
         event?.packageName?.let { packageName ->
             val currentApp = packageName.toString()
