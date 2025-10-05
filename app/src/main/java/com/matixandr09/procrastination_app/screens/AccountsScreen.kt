@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,8 +33,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.navigation.NavController
+import com.matixandr09.procrastination_app.BuildConfig
 import com.matixandr09.procrastination_app.R
 import com.matixandr09.procrastination_app.ScreenTimeAccessibilityService
 import com.matixandr09.procrastination_app.services.SessionVerificationService
@@ -45,6 +48,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.* 
 import io.ktor.serialization.kotlinx.json.* 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -88,7 +92,7 @@ fun AccountsScreen(navController: NavController) {
 
     DisposableEffect(Unit) {
         val filter = IntentFilter("com.matixandr09.procrastination_app.LOGOUT")
-        context.registerReceiver(logoutReceiver, filter)
+        ContextCompat.registerReceiver(context, logoutReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         onDispose {
             context.unregisterReceiver(logoutReceiver)
         }
@@ -292,6 +296,7 @@ fun AccountsScreen(navController: NavController) {
                         val request = LoginRequest(email, password)
                         try {
                             val response: HttpResponse = client.post("https://obszdnckcefuszlilzsd.supabase.co/functions/v1/login") {
+                                header("apikey", BuildConfig.SUPABASE_API_KEY)
                                 contentType(ContentType.Application.Json)
                                 setBody(request)
                             }
@@ -307,9 +312,15 @@ fun AccountsScreen(navController: NavController) {
                                 context.startService(Intent(context, SessionVerificationService::class.java))
                             } else {
                                 Log.e("Auth", "Login failed: ${response.bodyAsText()}")
+                                launch(Dispatchers.Main) {
+                                    Toast.makeText(context, "Login failed. Please check your credentials.", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         } catch (e: Exception) {
                             Log.e("Auth", "Error: ${e.message}")
+                            launch(Dispatchers.Main) {
+                                Toast.makeText(context, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show()
+                            }
                         } finally {
                             client.close()
                         }
@@ -317,6 +328,7 @@ fun AccountsScreen(navController: NavController) {
                         val request = RegisterRequest(email, password, username)
                         try {
                             val response: HttpResponse = client.post("https://obszdnckcefuszlilzsd.supabase.co/functions/v1/register") {
+                                header("apikey", BuildConfig.SUPABASE_API_KEY)
                                 contentType(ContentType.Application.Json)
                                 setBody(request)
                             }
@@ -332,9 +344,15 @@ fun AccountsScreen(navController: NavController) {
                                 context.startService(Intent(context, SessionVerificationService::class.java))
                             } else {
                                 Log.e("Auth", "Registration failed: ${response.bodyAsText()}")
+                                launch(Dispatchers.Main) {
+                                    Toast.makeText(context, "Registration failed. Please try again.", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         } catch (e: Exception) {
                             Log.e("Auth", "Error: ${e.message}")
+                            launch(Dispatchers.Main) {
+                                Toast.makeText(context, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show()
+                            }
                         } finally {
                             client.close()
                         }
@@ -347,6 +365,7 @@ fun AccountsScreen(navController: NavController) {
 
 @Composable
 fun AuthOverlay(isLogin: Boolean, onDismiss: () -> Unit, onAuth: (String, String, String) -> Unit) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
@@ -419,13 +438,17 @@ fun AuthOverlay(isLogin: Boolean, onDismiss: () -> Unit, onAuth: (String, String
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
+                if (email.isBlank() || password.isBlank() || (!isLogin && username.isBlank())) {
+                    Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
                 if(isLogin) {
                     onAuth(email, password, "")
                 } else {
                     if (password == repeatPassword) {
                         onAuth(email, password, username)
                     } else {
-                        Log.d("Auth", "Passwords do not match")
+                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                     }
                 }
             }) {
