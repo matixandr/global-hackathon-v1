@@ -25,6 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,14 +38,67 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.matixandr09.procrastination_app.R
-import java.util.Calendar
+import com.matixandr09.procrastination_app.data.AppViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
 import java.util.Locale
 
+class StreakViewModel(private val appViewModel: AppViewModel) : ViewModel() {
+    private val _streak = MutableStateFlow(0)
+    val streak: StateFlow<Int> = _streak
+
+    val completedDates: StateFlow<Set<LocalDate>> = appViewModel.completedDates
+
+    init {
+        processTasks(appViewModel.completedDates.value.toList())
+    }
+
+    private fun processTasks(dates: List<LocalDate>) {
+        val sortedDates = dates.distinct().sortedDescending()
+
+        if (sortedDates.isEmpty()) {
+            _streak.value = 0
+            return
+        }
+
+        var currentStreak = 0
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        val latestDate = sortedDates.first()
+
+        if (latestDate == today || latestDate == yesterday) {
+            currentStreak = 1
+            for (i in 0 until sortedDates.size - 1) {
+                if (sortedDates[i].minusDays(1) == sortedDates[i + 1]) {
+                    currentStreak++
+                } else {
+                    break
+                }
+            }
+        }
+
+        _streak.value = currentStreak
+    }
+}
+
 @Composable
-fun StreakScreen(navController: NavController) {
+fun StreakScreen(
+    navController: NavController,
+    appViewModel: AppViewModel,
+) {
+    val streakViewModel: StreakViewModel = viewModel(factory = StreakViewModelFactory(appViewModel))
+    val streak by streakViewModel.streak.collectAsState()
+    val completedDates by streakViewModel.completedDates.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,7 +108,7 @@ fun StreakScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(170.dp)
+                .height(200.dp)
                 .background(Color(0xFFF98404))
         ) {
             Row(
@@ -85,14 +140,14 @@ fun StreakScreen(navController: NavController) {
                 verticalArrangement = Arrangement.Bottom,
                 horizontalAlignment = Alignment.Start
             ) {
-                 Row(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
                         Text(
-                            text = "0",
+                            text = streak.toString(),
                             color = Color.White,
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold
@@ -115,6 +170,12 @@ fun StreakScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         // Calendar
+        val today = LocalDate.now()
+        val yearMonth = YearMonth.from(today)
+        val daysInMonth = yearMonth.lengthOfMonth()
+        val firstDayOfMonth = today.withDayOfMonth(1)
+        val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value // Monday is 1, Sunday is 7
+
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
@@ -125,7 +186,7 @@ fun StreakScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "SEPTEMBER 2025",
+                text = "${today.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).uppercase()} ${today.year}",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Gray,
@@ -151,12 +212,6 @@ fun StreakScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Days of the month
-            val calendar = Calendar.getInstance()
-            calendar.set(2025, Calendar.SEPTEMBER, 1)
-            val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-            val firstDayOfWeek = (calendar.get(Calendar.DAY_OF_WEEK) - Calendar.MONDAY + 7) % 7 // Monday is the first day
-
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
                 modifier = Modifier.fillMaxWidth(),
@@ -164,21 +219,23 @@ fun StreakScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 // Add empty cells for days before the 1st of the month
-                items(firstDayOfWeek) {
+                items(firstDayOfWeek - 1) {
                     Box(modifier = Modifier.size(40.dp))
                 }
                 items(daysInMonth) { day ->
+                    val date = today.withDayOfMonth(day + 1)
+                    val isCompleted = completedDates.contains(date)
                     Box(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFE0E0E0)),
+                            .background(if (isCompleted) Color(0xFFF98404) else Color(0xFFE0E0E0)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = (day + 1).toString(),
                             fontSize = 14.sp,
-                            color = Color.Black
+                            color = if (isCompleted) Color.White else Color.Black
                         )
                     }
                 }
@@ -190,5 +247,15 @@ fun StreakScreen(navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun StreakScreenPreview() {
-    StreakScreen(rememberNavController())
+    StreakScreen(rememberNavController(), AppViewModel())
+}
+
+class StreakViewModelFactory(private val appViewModel: AppViewModel) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(StreakViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return StreakViewModel(appViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
 }
